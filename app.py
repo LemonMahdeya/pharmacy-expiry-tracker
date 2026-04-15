@@ -17,9 +17,26 @@ date_new = st.sidebar.date_input("تاريخ الشيت الأحدث", value=dat
 
 days_diff = (date_new - date_old).days
 
-if old_file and new_file and days_diff > 0:
-    df_old = pd.read_csv(old_file) if old_file.name.endswith('csv') else pd.read_excel(old_file)
-    df_new = pd.read_csv(new_file) if new_file.name.endswith('csv') else pd.read_excel(new_file)
+if old_file and new_file:
+    # قراءة الملفات مع تحديد الـ encoding تحسباً للغة العربية في الـ CSV
+    try:
+        df_old = pd.read_csv(old_file, encoding='utf-8-sig') if old_file.name.endswith('csv') else pd.read_excel(old_file)
+        df_new = pd.read_csv(new_file, encoding='utf-8-sig') if new_file.name.endswith('csv') else pd.read_excel(new_file)
+    except:
+        # إذا فشل اليونيكود جرب encoding الويندوز الشائع للعربية
+        df_old = pd.read_csv(old_file, encoding='cp1256') if old_file.name.endswith('csv') else pd.read_excel(old_file)
+        df_new = pd.read_csv(new_file, encoding='cp1256') if new_file.name.endswith('csv') else pd.read_excel(new_file)
+
+    # تنظيف أسماء الأعمدة (حذف المسافات من البداية والنهاية)
+    df_old.columns = df_old.columns.str.strip()
+    df_new.columns = df_new.columns.str.strip()
+
+    # الآن جرب تحويل التاريخ مرة أخرى
+    try:
+        df_new['تاريخ الصلاحية'] = pd.to_datetime(df_new['تاريخ الصلاحية'])
+    except KeyError:
+        st.error(f"لم أجد عمود 'تاريخ الصلاحية'. الأعمدة المتاحة في ملفك هي: {df_new.columns.tolist()}")
+        st.stop()
 
     # تنظيف البيانات
     df_new['تاريخ الصلاحية'] = pd.to_datetime(df_new['تاريخ الصلاحية'])
